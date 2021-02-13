@@ -11,13 +11,6 @@ IDXGISwapChain*         CRenderer::m_SwapChain = NULL;
 ID3D11RenderTargetView* CRenderer::m_RenderTargetView = NULL;
 ID3D11DepthStencilView* CRenderer::m_DepthStencilView = NULL;
 
-ID3D11RenderTargetView* CRenderer::m_ShadowRenderTargetView = NULL;
-ID3D11ShaderResourceView* CRenderer::m_ShadowDepthShaderResourceView = NULL;
-
-ID3D11RenderTargetView*   CRenderer::m_PassRenderTarget[PASS_COUNT] = { NULL };
-ID3D11ShaderResourceView* CRenderer::m_PassShaderResourceView[PASS_COUNT] = { NULL };
-ID3D11Texture2D*		  CRenderer::m_PassTexture[PASS_COUNT] = { NULL };
-
 ID3D11SamplerState* CRenderer::m_SamplerState = NULL;
 ID3D11SamplerState* CRenderer::m_ShadowSamplerState = NULL;
 
@@ -33,35 +26,6 @@ ID3D11Buffer*			CRenderer::m_GaussBuffer = NULL;
 
 ID3D11DepthStencilState* CRenderer::m_DepthStateEnable = NULL;
 ID3D11DepthStencilState* CRenderer::m_DepthStateDisable = NULL;
-
-//-------------------------------------------------------------------------------------------------
-//      ブラーパラメータを計算します.
-//-------------------------------------------------------------------------------------------------
-GaussBlurParam CRenderer::CalcBlurParam(float power, float width, float height)
-{
-	GaussBlurParam result;
-	float total = 0;
-	float disperision = power;
-	for (int i = 0; i < 8; i++) {
-		float pos = 1.0f + 2.0f * (float)i;
-		result.weight[i] = exp(-0.5f * pos * pos / disperision);
-		if (i == 0) {
-			total += result.weight[i];
-		}
-		else {
-			total += 2.0f * result.weight[i];
-		}
-	}
-
-	for (int i = 0; i < 8; i++) {
-		result.weight[i] /= total;
-	}
-
-	result.texsize.x = width;
-	result.texsize.y = height;
-
-	return result;
-}
 
 void CRenderer::Init()
 {
@@ -277,76 +241,6 @@ void CRenderer::Init()
 	material.Diffuse = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
 	material.Ambient = D3DXCOLOR(1.0f, 1.0f, 1.0f, 1.0f);
 	SetMaterial(material);
-
-	{
-		// 2次元テクスチャの設定
-		D3D11_TEXTURE2D_DESC td;
-		ZeroMemory(&td, sizeof(td));
-		td.Width = sd.BufferDesc.Width;
-		td.Height = sd.BufferDesc.Height;
-		td.MipLevels = 1;
-		td.ArraySize = 1;
-		td.Format = DXGI_FORMAT_R8G8B8A8_TYPELESS;
-		td.SampleDesc = sd.SampleDesc;
-		td.Usage = D3D11_USAGE_DEFAULT;
-		td.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-		td.CPUAccessFlags = 0;
-		td.MiscFlags = 0;
-
-		// レンダーターゲットビューの設定
-		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
-		memset(&rtvDesc, 0, sizeof(rtvDesc));
-		rtvDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-
-		// シェーダリソースビューの設定
-		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-		memset(&srvDesc, 0, sizeof(srvDesc));
-		srvDesc.Format = rtvDesc.Format;
-		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MipLevels = 1;
-
-		for (int i = 0; i < PASS_COUNT; i++)
-		{
-			m_D3DDevice->CreateTexture2D(&td, NULL, &m_PassTexture[i]);
-			m_D3DDevice->CreateRenderTargetView(m_PassTexture[i], &rtvDesc, &m_PassRenderTarget[i]);
-			m_D3DDevice->CreateShaderResourceView(m_PassTexture[i], &srvDesc, &m_PassShaderResourceView[i]);
-		}
-	}
-	{
-		// 2次元テクスチャの設定
-		ID3D11Texture2D *TexCoord;
-		D3D11_TEXTURE2D_DESC td;
-		ZeroMemory(&td, sizeof(td));
-		td.Width = sd.BufferDesc.Width;
-		td.Height = sd.BufferDesc.Height;
-		td.MipLevels = 1;
-		td.ArraySize = 1;
-		td.Format = DXGI_FORMAT_R16G16B16A16_TYPELESS;
-		td.SampleDesc = sd.SampleDesc;
-		td.Usage = D3D11_USAGE_DEFAULT;
-		td.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-		td.CPUAccessFlags = 0;
-		td.MiscFlags = 0;
-
-		// レンダーターゲットビューの設定
-		D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
-		memset(&rtvDesc, 0, sizeof(rtvDesc));
-		rtvDesc.Format = DXGI_FORMAT_R16G16B16A16_UNORM;
-		rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-
-		// シェーダリソースビューの設定
-		D3D11_SHADER_RESOURCE_VIEW_DESC srvDesc;
-		memset(&srvDesc, 0, sizeof(srvDesc));
-		srvDesc.Format = rtvDesc.Format;
-		srvDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-		srvDesc.Texture2D.MipLevels = 1;
-
-		m_D3DDevice->CreateTexture2D(&td, NULL, &TexCoord);
-		m_D3DDevice->CreateRenderTargetView(TexCoord, &rtvDesc, &m_ShadowRenderTargetView);
-		m_D3DDevice->CreateShaderResourceView(TexCoord, &srvDesc, &m_ShadowDepthShaderResourceView);
-		TexCoord->Release();
-	}
 }
 
 void CRenderer::Uninit()
@@ -367,18 +261,8 @@ void CRenderer::Uninit()
 	m_ImmediateContext->Release();
 	m_D3DDevice->Release();
 
-	m_ShadowRenderTargetView->Release();
-	m_ShadowDepthShaderResourceView->Release();
-
 	m_SamplerState->Release();
 	m_ShadowSamplerState->Release();
-
-	for (int i = 0; i < PASS_COUNT; i++)
-	{
-		m_PassRenderTarget[i]->Release();
-		m_PassShaderResourceView[i]->Release();
-		m_PassTexture[i]->Release();
-	}
 }
 
 void CRenderer::Begin()
@@ -386,28 +270,8 @@ void CRenderer::Begin()
 	m_ImmediateContext->OMSetRenderTargets(1, &m_RenderTargetView, m_DepthStencilView);
 
 	// バックバッファクリア
-	float ClearColor[4] = { 0.0f, 0.8f, 0.0f, 1.0f };
+	float ClearColor[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	m_ImmediateContext->ClearRenderTargetView(m_RenderTargetView, ClearColor);
-	m_ImmediateContext->ClearDepthStencilView(m_DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
-}
-
-void CRenderer::BeginRenderTargetViewSwitch(int num)
-{
-	m_ImmediateContext->OMSetRenderTargets(1, &m_PassRenderTarget[num], m_DepthStencilView);
-
-	// バックバッファクリア
-	float ClearColor[4] = { 0.0f, 0.5f, 0.0f, 1.0f };
-	m_ImmediateContext->ClearRenderTargetView(m_PassRenderTarget[num], ClearColor);
-	m_ImmediateContext->ClearDepthStencilView(m_DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
-}
-
-void CRenderer::BeginDepth()
-{
-	m_ImmediateContext->OMSetRenderTargets(1, &m_ShadowRenderTargetView, m_DepthStencilView);
-
-	// バックバッファクリア
-	float ClearColor[4] = { 1.0f, 1.0f, 0.0f, 1.0f };
-	m_ImmediateContext->ClearRenderTargetView(m_ShadowRenderTargetView, ClearColor);
 	m_ImmediateContext->ClearDepthStencilView(m_DepthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 

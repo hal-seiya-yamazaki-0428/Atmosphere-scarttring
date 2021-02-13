@@ -9,11 +9,15 @@
 #include "scene.h"
 #include "shadow_scene.h"
 #include "shader.h"
+#include "sprite.h"
 #include "atmosphere.h"
 #include "myimGui.h"
 #include "camera_light.h"
 
 #include "model.h"
+#include "polygon.h"
+#include "gauss.h"
+#include "shadow.h"
 
 //===========================================
 //グローバル変数
@@ -34,6 +38,8 @@ void CManager::Init()
 	CShader::ToonTextureLoad();
 	CLight::SetDefaultLight();
 	CAtmosphere::Init();
+	CGauss::Init();
+	CShadow::Init();
 
 	m_Scene = new CScene;
 	m_Scene->Init();
@@ -43,6 +49,7 @@ void CManager::Init()
 
 	g_Polygon = new CPolygon;
 	g_Polygon->Init();
+
 }
 
 //===========================================
@@ -59,12 +66,15 @@ void CManager::Uninit()
 	g_Polygon->Uninit();
 	delete g_Polygon;
 
+
 	CInput::Uninit();
 	CMouse::Uninit();
 	CRenderer::Uninit();
 	CMyImGui::Uninit();
 	CShader::ToonTextureUnload();
 	CAtmosphere::Uninit();
+	CGauss::Uninit();
+	CShadow::Uninit();
 }
 
 //===========================================
@@ -75,6 +85,8 @@ void CManager::Update()
 	CInput::Update();
 	CMouse::Update();
 	CAtmosphere::Update();
+	CGauss::Update();
+	CShadow::Update();
 
 	m_ShadowScene->Update();
 	m_Scene->Update();
@@ -87,36 +99,22 @@ void CManager::Update()
 void CManager::Draw()
 {
 	//変数宣言
-	GaussBlurParam gauss;
-	float w = (float)SCREEN_WIDTH;
-	float h = (float)SCREEN_HEIGHT;
-	CShader* gauss_x = new CShader("gaussVS.cso", "gaussXPS.cso");
-	CShader* gauss_y = new CShader("gaussVS.cso", "gaussYPS.cso");
 	CShader* unlitTexture = new CShader("unlitTextureVS.cso", "unlitTexturePS.cso");
 
 	CMyImGui::Begin();
 
 	//深度テクスチャ作成
-	CRenderer::BeginDepth();
+	CShadow::Create();
 	m_ShadowScene->Draw();
 
-	//1パス目
-	CRenderer::BeginRenderTargetViewSwitch(0);
-	// パラメータ設定
-	gauss = CRenderer::CalcBlurParam(32.0f, w, h);
-	CRenderer::SetGaussBuler(gauss);
-
-	g_Polygon->FullScreenDraw(CRenderer::GetShadowTexture(), gauss_y);
-
-	//2パス目
-	CRenderer::BeginRenderTargetViewSwitch(1);
-
-	g_Polygon->FullScreenDraw(CRenderer::GetSRV(0), gauss_x);
+	//ガウステクスチャ
+	auto tex = CGauss::Create(CShadow::GetShadowTexture());
 
 	//最終パス
 	CRenderer::Begin();
+
 	m_Scene->Draw();
-	g_Polygon->Draw(CRenderer::GetSRV(1), unlitTexture);
+	//g_Polygon->Draw(tex, unlitTexture);
 	CAtmosphere::Draw();
 
 	//m_ShadowScene->GetGameObject<CLightCamera>(Layer_Camera)->ImGuiDraw();
@@ -124,7 +122,5 @@ void CManager::Draw()
 	CMyImGui::End();
 	CRenderer::End();
 
-	delete gauss_x;
-	delete gauss_y;
 	delete unlitTexture;
 }

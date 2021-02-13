@@ -20,7 +20,7 @@ void CSkyDome::Init()
 
 	m_Model = new CModel();
 	m_Model->Load("asset\\model\\atomosphere.obj");
-	//m_Model->Load("asset\\model\\space_dome.obj");
+	//m_Model->Load("asset\\model\\half_sky_dome.obj");
 
 	m_Position = D3DXVECTOR3(0.0f, -2.5f, 0.0f);
 	m_Rotation = D3DXVECTOR3(0.0f, 0.0f, 0.0f);

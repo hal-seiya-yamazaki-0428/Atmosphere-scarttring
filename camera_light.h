@@ -14,7 +14,6 @@ public:
 	void Uninit() override;
 	void Update() override;
 	void Draw() override;
-
 	void ImGuiDraw();
 };
 

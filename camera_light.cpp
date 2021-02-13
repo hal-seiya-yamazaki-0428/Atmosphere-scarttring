@@ -7,6 +7,8 @@
 #include "camera_light.h"
 #include "atmosphere.h"
 
+static float g_distance = 15.0f;
+
 void CLightCamera::Init()
 {
 	m_Name = "camera";
@@ -16,6 +18,7 @@ void CLightCamera::Init()
 
 	m_Near = 10.0f;
 	m_Far = 100.0f;
+	g_distance = 15.0f;
 
 	m_vecFront = D3DXVECTOR3(0.0f, 0.0f, 1.0f);
 	m_vecRight = D3DXVECTOR3(1.0f, 0.0f, 0.0f);
@@ -31,7 +34,7 @@ void CLightCamera::Uninit()
 
 void CLightCamera::Update()
 {
-	m_Position = CAtmosphere::GetLightDir() * 15.0f;
+	m_Position = CAtmosphere::GetLightDir() * g_distance;
 }
 
 void CLightCamera::Draw()
@@ -87,12 +90,29 @@ void CLightCamera::ImGuiDraw()
 	if (ImGui::TreeNode(u8"Far"))
 	{
 		ImGui::Text(u8"スライダー");
-		ImGui::SliderFloat("##Far_slider", &m_Far, 10.0f, 100.0f);
+		ImGui::SliderFloat("##Far_slider", &m_Far, 10.0f, 1000.0f);
 		ImGui::Text(u8"入力");
 		ImGui::InputFloat("##Far_input", &m_Far);
 		if (ImGui::Button(u8"リセット"))
 		{
 			m_Far = 100.0f;
+		}
+
+		ImGui::TreePop();
+	}
+	ImGui::Separator();
+
+	//距離の設定
+	ImGui::SetNextTreeNodeOpen(false, ImGuiCond_Once);
+	if (ImGui::TreeNode(u8"距離"))
+	{
+		ImGui::Text(u8"スライダー");
+		ImGui::SliderFloat("##Distance_slider", &g_distance, 1.0f, 100.0f);
+		ImGui::Text(u8"入力");
+		ImGui::InputFloat("##Distance_input", &g_distance);
+		if (ImGui::Button(u8"リセット"))
+		{
+			g_distance = 15.0f;
 		}
 
 		ImGui::TreePop();

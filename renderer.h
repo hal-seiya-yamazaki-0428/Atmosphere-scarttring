@@ -1,14 +1,5 @@
 #pragma once
 
-
-struct GaussBlurParam
-{
-	float weight[8];
-	D3DXVECTOR2 texsize;
-	D3DXVECTOR2 Dummy;
-};
-
-
 // í∏ì_ç\ë¢ëÃ
 struct VERTEX_3D
 {
@@ -73,14 +64,20 @@ struct Atmosphere
 	float SunPower;
 	float ScaleDepth;
 	float g;
+	D3DXVECTOR4 lum;
+};
+
+struct GaussBlurParam
+{
+	float weight[8];
+	D3DXVECTOR2 texsize;
+	D3DXVECTOR2 Dummy;
 };
 
 
 class CVertexBuffer;
 class CIndexBuffer;
 class CTexture;
-
-#define PASS_COUNT (4)
 
 class CRenderer
 {
@@ -93,13 +90,6 @@ private:
 	static IDXGISwapChain*         m_SwapChain;
 	static ID3D11RenderTargetView* m_RenderTargetView;
 	static ID3D11DepthStencilView* m_DepthStencilView;
-
-	static ID3D11RenderTargetView* m_ShadowRenderTargetView;
-	static ID3D11ShaderResourceView* m_ShadowDepthShaderResourceView;
-
-	static ID3D11RenderTargetView*   m_PassRenderTarget[PASS_COUNT];
-	static ID3D11ShaderResourceView* m_PassShaderResourceView[PASS_COUNT];
-	static ID3D11Texture2D*			 m_PassTexture[PASS_COUNT];
 
 	static ID3D11SamplerState* m_SamplerState;
 	static ID3D11SamplerState* m_ShadowSamplerState;
@@ -125,8 +115,6 @@ public:
 	static void Init();
 	static void Uninit();
 	static void Begin();
-	static void BeginRenderTargetViewSwitch(int num);
-	static void BeginDepth();
 	static void End();
 
 	static void SetClearZBuffer();
@@ -149,9 +137,7 @@ public:
 	static void SetDefaultSampleState();
 	static void SetShadowSampleState();
 
-	static GaussBlurParam CalcBlurParam(float power, float width, float height);
-	static ID3D11ShaderResourceView* GetSRV(int num) { return m_PassShaderResourceView[num]; }
-	static ID3D11ShaderResourceView* GetShadowTexture() { return m_ShadowDepthShaderResourceView; }
+	static ID3D11DepthStencilView* GetDepthStencilView() { return m_DepthStencilView; }
 
 	static ID3D11Device* GetDevice( void ){ return m_D3DDevice; }
 	static ID3D11DeviceContext* GetDeviceContext( void ){ return m_ImmediateContext; }

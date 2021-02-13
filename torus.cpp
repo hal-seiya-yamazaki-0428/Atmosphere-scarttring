@@ -5,6 +5,7 @@
 #include "shader.h"
 #include "model.h"
 #include "torus.h"
+#include "gauss.h"
 
 void CTorus::Init()
 {
@@ -45,7 +46,7 @@ void CTorus::Draw()
 
 	CRenderer::SetWorldMatrix(&world);
 
-	ID3D11ShaderResourceView* shadowDepthTexture = CRenderer::GetSRV(1);
+	ID3D11ShaderResourceView* shadowDepthTexture = CGauss::GetSRV(1);
 	CRenderer::GetDeviceContext()->PSSetShaderResources(1, 1, &shadowDepthTexture);
 
 	m_Model->Draw();

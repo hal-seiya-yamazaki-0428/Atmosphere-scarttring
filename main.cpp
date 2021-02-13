@@ -59,7 +59,6 @@ int APIENTRY WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLi
 		hInstance,
 		NULL);
 
-
 	// 初期化処理(ウィンドウを作成してから行う)
 	CManager::Init();
 

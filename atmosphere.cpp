@@ -14,6 +14,11 @@
 #define DEFAULT_KM (0.001f)
 #define DEFAULT_SUN_POWER (20.0f)
 #define DEFAULT_G (-0.99f)
+#define DEFAULT_LUM_X (3.0f)
+#define DEFAULT_LUM_Y (5.5f)
+#define DEFAULT_LUM_Z (6.3f)
+#define DEFAULT_LUM_W (2.2f)
+#define DEFAULT_LUM (D3DXVECTOR4(DEFAULT_LUM_X, DEFAULT_LUM_Y, DEFAULT_LUM_Z, DEFAULT_LUM_W))
 
 //===========================================
 //static宣言
@@ -21,6 +26,7 @@
 ID3D11ShaderResourceView *CAtmosphere::m_Texture[2];
 Atmosphere				  CAtmosphere::m_Atm;
 bool					  CAtmosphere::m_Stop;
+bool					  CAtmosphere::m_On;
 int						  CAtmosphere::m_TimeRate;
 float					  CAtmosphere::m_TimeFrame;
 
@@ -36,8 +42,10 @@ void CAtmosphere::Init()
 	m_Atm.SunPower = DEFAULT_SUN_POWER;
 	m_Atm.ScaleDepth = 0.25f;
 	m_Atm.g = DEFAULT_G;
+	m_Atm.lum = DEFAULT_LUM;
 
 	m_Stop = false;
+	m_On = false;
 	m_TimeRate = 1;
 	m_TimeFrame = 0;
 
@@ -146,9 +154,7 @@ void CAtmosphere::Draw()
 		ImGui::SetNextTreeNodeOpen(false, ImGuiCond_Once);
 		if (ImGui::TreeNode(u8"太陽ベクトル設定"))
 		{
-			ImGui::Text(u8"スライダー");
 			ImGui::DragFloat3("##dir_slider", m_Atm.LightDir, 0.01f);
-			ImGui::Text(u8"入力");
 			ImGui::InputFloat3("##dir_input", m_Atm.LightDir);
 
 			ImGui::TreePop();
@@ -159,9 +165,8 @@ void CAtmosphere::Draw()
 		ImGui::SetNextTreeNodeOpen(false, ImGuiCond_Once);
 		if (ImGui::TreeNode(u8"太陽光設定"))
 		{
-			ImGui::Text(u8"スライダー");
+			ImGui::Text(u8"明るさ");
 			ImGui::SliderFloat("##sun_power_slider", &m_Atm.SunPower, 0.0f, 100.0f);
-			ImGui::Text(u8"入力");
 			ImGui::InputFloat("##sun_power_input", &m_Atm.SunPower);
 			ImGui::Text(u8"ガウス");
 			ImGui::DragFloat(u8"##g_drag", &m_Atm.g, 0.001f, -0.999f, -0.1f);
@@ -185,6 +190,27 @@ void CAtmosphere::Draw()
 			{
 				m_Atm.Kr = DEFAULT_KR;
 				m_Atm.Km = DEFAULT_KM;
+			}
+
+			ImGui::TreePop();
+		}
+		ImGui::Separator();
+
+		//最大輝度設定
+		ImGui::SetNextTreeNodeOpen(false, ImGuiCond_Once);
+		if (ImGui::TreeNode(u8"最大輝度設定"))
+		{
+			ImGui::DragFloat(u8"指数値（大）", &m_Atm.lum.x, 0.1f, 1.0f, 50.0f);
+			ImGui::InputFloat("##lun_input1", &m_Atm.lum.x);
+			ImGui::DragFloat(u8"指数値（小）", &m_Atm.lum.y, 0.1f, 1.0f, 50.0f);
+			ImGui::InputFloat("##lum_input2", &m_Atm.lum.y);
+			ImGui::DragFloat(u8"対数値", &m_Atm.lum.z, 0.1f, 1.0f, 50.0f);
+			ImGui::InputFloat("##lum_input3", &m_Atm.lum.z);
+			ImGui::DragFloat(u8"ガンマ値", &m_Atm.lum.w, 0.1f, 1.0f, 50.0f);
+			ImGui::InputFloat("##lum_input4", &m_Atm.lum.w);
+			if (ImGui::Button(u8"リセット"))
+			{
+				m_Atm.lum = DEFAULT_LUM;
 			}
 
 			ImGui::TreePop();

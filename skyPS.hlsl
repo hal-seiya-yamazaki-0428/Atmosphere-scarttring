@@ -12,6 +12,7 @@ struct ATMOSPHERE
 	float SunPower;
 	float ScaleDepth;
 	float g;
+	float4 lum;
 };
 
 cbuffer AtmosphereBuffer : register(b7)
@@ -60,7 +61,7 @@ float3 IntersectionPos(float3 dir, float3 a, float radius)
 }
 
 float4 main(in PS_IN input) : SV_Target
-{	
+{
 	matrix wvp;
 	wvp = mul(World, View);
 	wvp = mul(wvp, Projection);
@@ -111,5 +112,13 @@ float4 main(in PS_IN input) : SV_Target
  
 	float4 col = 1.0;
 	col.rgb = rayleighPhase * c0 + miePhase * c1;
+
+	//ç≈ëÂãPìxí≤êÆ
+	float k = (atm.lum.x - 1.0) / atm.lum.y;
+	col = log(1 + k * col);
+	col = 1.0 - exp(-atm.lum.z * col);
+	col = pow(col, 1 / atm.lum.w); //ÉKÉìÉ}íl
+	
+	col.a = 1.0;
 	return col;
 }

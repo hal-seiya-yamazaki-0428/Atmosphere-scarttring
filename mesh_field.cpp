@@ -5,6 +5,7 @@
 #include "myimGui.h"
 
 #include "mesh_field.h"
+#include "gauss.h"
 
 //(22 * 2) * 20 - 2
 #define INDEX_NUM ((MESH_Z + 1) * 2) * (MESH_X - 1) - 2
@@ -201,7 +202,8 @@ void CMeshField::Draw()
 
 	//テクスチャ設定
 	CRenderer::GetDeviceContext()->PSSetShaderResources(0, 1, &m_Texture);
-	ID3D11ShaderResourceView* shadowDepthTexture = CRenderer::GetSRV(1);
+	ID3D11ShaderResourceView* shadowDepthTexture = CGauss::GetSRV(1);
+	//ID3D11ShaderResourceView* shadowDepthTexture = CRenderer::GetShadowTexture();
 	CRenderer::GetDeviceContext()->PSSetShaderResources(1, 1, &shadowDepthTexture);
 
 	//プリミティブトポロジ設定
@@ -214,11 +216,17 @@ void CMeshField::Draw()
 	CRenderer::ChangeFillMode(false);
 }
 
+//===========================================
+//影描画用シェーダ設定
+//===========================================
 void CMeshField::ShadowShaderDraw()
 {
 	m_ShadowShader->ShaderDraw();
 }
 
+//===========================================
+//通常描画用シェーダ設定
+//===========================================
 void CMeshField::DefaultShaderDraw()
 {
 	m_DefaultShader->ShaderDraw();
